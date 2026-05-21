@@ -1,0 +1,22 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Large Zip Files & Backups
+*.zip
+*.rar
+*.tar.gz
+
+# OS generated files
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+.DS_Store
+
+# Local IDEs / Editors
+.vscode/
+.idea/
+
+# Local databases / models if they should be rebuilt
+# rf_model.pkl

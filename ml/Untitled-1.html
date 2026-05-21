@@ -1,0 +1,57 @@
+%%{init: {
+  'theme': 'base',
+  'themeVariables': {
+    'primaryColor': '#ffffff',
+    'primaryTextColor': '#000000',
+    'primaryBorderColor': '#333333',
+    'lineColor': '#666666',
+    'secondaryColor': '#f9f9f9',
+    'tertiaryColor': '#ffffff'
+  }
+}}%%
+erDiagram
+    USERS["PENGGUNA (Akun)"] {
+        int id PK
+        string nama
+        string email
+        string instansi
+        string jabatan
+        string role
+    }
+    
+    BANGUNAN["DATA BANGUNAN"] {
+        string id_bangunan PK
+        int id_pemilik FK
+        string nama_bangunan
+        string alamat
+        string wilayah
+        string fungsi
+    }
+    
+    SKENARIO["SKENARIO BOBOT (SAW)"] {
+        int id_skenario PK
+        string nama_skenario
+        string deskripsi
+    }
+    
+    PENILAIAN["HASIL PENILAIAN"] {
+        int id_penilaian PK
+        string id_bangunan FK
+        int id_auditor FK
+        decimal skor_akhir
+        string status_kelayakan
+    }
+    
+    FOTO["DOKUMENTASI FOTO"] {
+        int id_foto PK
+        string id_bangunan FK
+        string file_path
+    }
+
+    %% Hubungan antar Tabel
+    USERS ||--o{ BANGUNAN : "Mendaftarkan"
+    USERS ||--o{ PENILAIAN : "Mengaudit"
+    BANGUNAN ||--o{ FOTO : "Memiliki"
+    BANGUNAN ||--o{ PENILAIAN : "Dinilai"
+    SKENARIO ||--o{ BANGUNAN : "Mengatur"
+    SKENARIO ||--o{ PENILAIAN : "Diterapkan pada"
