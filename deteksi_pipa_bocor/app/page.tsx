@@ -21,12 +21,19 @@ export default function Dashboard() {
   const [lastNotificationId, setLastNotificationId] = useState<number | null>(null);
   const [showToast, setShowToast] = useState(false);
 
+  const SUPABASE_URL = "https://aukvdeuzgmwfnfwbtsse.supabase.co";
+  const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF1a3ZkZXV6Z213Zm5md2J0c3NlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzkzMjQ4NjYsImV4cCI6MjA5NDkwMDg2Nn0.vS7SChFVtvX-WNrHLhu3WX5PnN4iFvGzxQjkXPvpTHw";
+  const supabaseHeaders = { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` };
+
   const fetchData = async () => {
     try {
-      const res = await axios.get('http://localhost/Machine%20Learning/backend/api/get_latest.php');
-      if (res.data && res.data.readings.length > 0) {
-        setData(res.data);
-        const latestAlert = res.data.alerts[0];
+      const readingsRes = await axios.get(`${SUPABASE_URL}/rest/v1/sensor_readings?select=*&order=id.desc&limit=20`, { headers: supabaseHeaders });
+      const alertsRes = await axios.get(`${SUPABASE_URL}/rest/v1/alerts?select=*&order=id.desc&limit=5`, { headers: supabaseHeaders });
+      
+      if (readingsRes.data && readingsRes.data.length > 0) {
+        const readings = readingsRes.data.reverse();
+        setData({ readings, alerts: alertsRes.data });
+        const latestAlert = alertsRes.data[0];
         if (latestAlert && latestAlert.id !== lastNotificationId) {
           setLastNotificationId(latestAlert.id);
           setShowToast(true);
@@ -42,16 +49,16 @@ export default function Dashboard() {
 
   const fetchLeakHistory = async () => {
     try {
-      const res = await axios.get('http://localhost/Machine%20Learning/backend/api/get_leaks.php');
+      const res = await axios.get(`${SUPABASE_URL}/rest/v1/sensor_readings?select=*&status=neq.Normal&order=id.desc`, { headers: supabaseHeaders });
       if (res.data) setLeakHistory(res.data);
     } catch (error) {
-      // Jika backend belum aktif, tetap tampilkan tabel kosong
+      // Jika error, tetap tampilkan tabel kosong
     }
   };
 
   const handleDeleteLeak = async (id: number) => {
     try {
-      await axios.post('http://localhost/Machine%20Learning/backend/api/delete_leak.php', { id });
+      await axios.delete(`${SUPABASE_URL}/rest/v1/sensor_readings?id=eq.${id}`, { headers: supabaseHeaders });
       setLeakHistory((prev) => prev.filter((r) => r.id !== id));
     } catch (error) {
       console.error('Gagal menghapus data:', error);
@@ -60,7 +67,7 @@ export default function Dashboard() {
 
   const handleDeleteAllLeaks = async () => {
     try {
-      await axios.post('http://localhost/Machine%20Learning/backend/api/delete_all_leaks.php');
+      await axios.delete(`${SUPABASE_URL}/rest/v1/sensor_readings?status=neq.Normal`, { headers: supabaseHeaders });
       setLeakHistory([]);
     } catch (error) {
       console.error('Gagal menghapus semua data:', error);
