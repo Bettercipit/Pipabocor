@@ -1,0 +1,8 @@
+[phases.setup]
+nixPkgs = ["python313", "php83"]
+
+[phases.install]
+cmds = ["pip install -r requirements.txt"]
+
+[start]
+cmd = "python ml/model_service.py"
