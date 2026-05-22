@@ -5,8 +5,8 @@
 // ==========================================
 // PENGATURAN WIFI (Ganti dengan WiFi Anda)
 // ==========================================
-const char* ssid = "RedmiNote14"; 
-const char* password = "123456789";
+const char* ssid = "@Ruijie-sF6A8"; 
+const char* password = "enter_jo";
 
 // ==========================================
 // PENGATURAN SUPABASE REST API
