@@ -71,10 +71,38 @@ def hitung_estimasi_lokasi(s1, s2, s3, status):
     if status == "Normal":
         return "-"
     s1, s2, s3 = float(s1), float(s2), float(s3)
-    df_seg1 = s1 - s2
-    df_seg2 = s2 - s3
+    df_seg1 = s1 - s2  # penurunan debit di segmen 1
+    df_seg2 = s2 - s3  # penurunan debit di segmen 2
+    df_total = s1 - s3
     SEGMEN_LEN = 84.0
-    if df_seg1 >= df_seg2:
+
+    # === TOLERANSI NOISE UNTUK ALIRAN RENDAH ===
+    # Pada aliran rendah (< 2 L/min), sensor YF-S201 kurang presisi.
+    # Noise bisa menyebabkan delta_seg2 > delta_seg1 padahal bocor di seg1.
+    NOISE_MARGIN = 0.15  # toleransi noise sensor (L/min)
+
+    # Tentukan segmen bocor dengan logika yang lebih robust
+    if df_seg1 > df_seg2 + NOISE_MARGIN:
+        # Drop di segmen 1 JAUH lebih besar → pasti bocor di segmen 1
+        segmen = 1
+    elif df_seg2 > df_seg1 + NOISE_MARGIN:
+        # Drop di segmen 2 JAUH lebih besar → pasti bocor di segmen 2
+        segmen = 2
+    else:
+        # Kedua delta mirip / dalam range noise → ambiguous
+        # Pada aliran rendah, sensor sering salah baca.
+        # Prioritas: jika ada penurunan positif dari S1→S2, bocor di segmen 1
+        if df_seg1 > 0:
+            segmen = 1
+        elif df_seg2 > 0 and df_seg1 <= 0:
+            # S2 > S1 (anomali sensor) tapi S2 > S3 → kemungkinan tetap bocor di seg1
+            # karena air yang bocor di seg1 mengurangi aliran ke S3
+            segmen = 1
+        else:
+            segmen = 1  # Default segmen 1 jika semua ambiguous
+
+    # Hitung estimasi jarak dalam segmen
+    if segmen == 1:
         rasio = df_seg1 / s1 if s1 > 0 else 0.5
         jarak_kotor = (1.0 - rasio) * SEGMEN_LEN
         jarak_final = min(SEGMEN_LEN - 5.0, max(5.0, jarak_kotor))
