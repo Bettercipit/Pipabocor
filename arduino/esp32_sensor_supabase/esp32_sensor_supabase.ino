@@ -36,6 +36,21 @@ float flowRate1 = 0.0;
 float flowRate2 = 0.0;
 float flowRate3 = 0.0;
 
+// ==========================================
+// SMOOTHING: Moving Average (rata-rata 3 pembacaan terakhir)
+// Mencegah lonjakan tiba-tiba ke 0 akibat gelembung udara / jeda aliran
+// ==========================================
+const int NUM_READINGS = 3;
+float readings1[NUM_READINGS] = {0};
+float readings2[NUM_READINGS] = {0};
+float readings3[NUM_READINGS] = {0};
+int readIndex = 0;
+
+// Nilai terakhir yang valid (bukan 0) untuk digunakan sebagai fallback
+float lastValid1 = 0.0;
+float lastValid2 = 0.0;
+float lastValid3 = 0.0;
+
 // Variabel waktu untuk interval perhitungan (milidetik)
 unsigned long oldTime = 0;
 const unsigned long interval = 2000; // Kirim data setiap 2 detik
@@ -46,6 +61,14 @@ const unsigned long interval = 2000; // Kirim data setiap 2 detik
 void IRAM_ATTR pulseCounter1() { pulseCount1++; }
 void IRAM_ATTR pulseCounter2() { pulseCount2++; }
 void IRAM_ATTR pulseCounter3() { pulseCount3++; }
+
+float getAverage(float arr[], int size) {
+  float sum = 0;
+  for (int i = 0; i < size; i++) {
+    sum += arr[i];
+  }
+  return sum / size;
+}
 
 void setup() {
   Serial.begin(115200);
@@ -80,26 +103,42 @@ void loop() {
     detachInterrupt(digitalPinToInterrupt(sensorPin2));
     detachInterrupt(digitalPinToInterrupt(sensorPin3));
 
-    // Menghitung L/min: (Pulsa per detik) / Kalibrasi
-    // pulseCount adalah total pulsa dalam "interval" ms
-    // Frekuensi = (pulseCount * 1000) / interval
-    
-    // S1
-    flowRate1 = ((1000.0 / (millis() - oldTime)) * pulseCount1) / calibrationFactor;
-    // S2
-    flowRate2 = ((1000.0 / (millis() - oldTime)) * pulseCount2) / calibrationFactor;
-    // S3
-    flowRate3 = ((1000.0 / (millis() - oldTime)) * pulseCount3) / calibrationFactor;
+    // Menghitung L/min mentah
+    float raw1 = ((1000.0 / (millis() - oldTime)) * pulseCount1) / calibrationFactor;
+    float raw2 = ((1000.0 / (millis() - oldTime)) * pulseCount2) / calibrationFactor;
+    float raw3 = ((1000.0 / (millis() - oldTime)) * pulseCount3) / calibrationFactor;
 
     oldTime = millis(); // Reset waktu
+
+    // Masukkan ke buffer moving average
+    readings1[readIndex] = raw1;
+    readings2[readIndex] = raw2;
+    readings3[readIndex] = raw3;
+    readIndex = (readIndex + 1) % NUM_READINGS;
+
+    // Hitung rata-rata dari 3 pembacaan terakhir (smoothing)
+    flowRate1 = getAverage(readings1, NUM_READINGS);
+    flowRate2 = getAverage(readings2, NUM_READINGS);
+    flowRate3 = getAverage(readings3, NUM_READINGS);
+
+    // Simpan nilai terakhir yang valid (bukan 0 semua)
+    if (flowRate1 > 0.1 || flowRate2 > 0.1 || flowRate3 > 0.1) {
+      lastValid1 = flowRate1;
+      lastValid2 = flowRate2;
+      lastValid3 = flowRate3;
+    }
 
     // Tampilkan di Serial Monitor
     Serial.printf("Aliran: S1=%.2f L/min | S2=%.2f L/min | S3=%.2f L/min\n", flowRate1, flowRate2, flowRate3);
 
-    // Kirim data ke Server jika WiFi terhubung
-    if(WiFi.status() == WL_CONNECTED){
+    // SKIP pengiriman jika semua sensor bernilai 0 (data tidak valid)
+    if (flowRate1 < 0.1 && flowRate2 < 0.1 && flowRate3 < 0.1) {
+      Serial.println("[SKIP] Semua sensor bernilai 0 - data tidak dikirim.");
+    }
+    // Kirim data ke Server jika WiFi terhubung dan data valid
+    else if(WiFi.status() == WL_CONNECTED){
       WiFiClientSecure client;
-      client.setInsecure(); // Mengizinkan HTTPS tanpa memverifikasi sertifikat SSL (sangat penting!)
+      client.setInsecure(); // Mengizinkan HTTPS tanpa memverifikasi sertifikat SSL
       HTTPClient http;
       
       http.begin(client, supabaseUrl);
@@ -111,7 +150,7 @@ void loop() {
       http.addHeader("Authorization", authHeader);
       http.addHeader("Prefer", "return=minimal"); // Agar respon lebih cepat
 
-      // Format JSON disesuaikan dengan kolom database Supabase (sensor_1, sensor_2, sensor_3)
+      // Format JSON disesuaikan dengan kolom database Supabase
       String jsonPayload = "{\"sensor_1\": " + String(flowRate1, 2) + 
                            ", \"sensor_2\": " + String(flowRate2, 2) + 
                            ", \"sensor_3\": " + String(flowRate3, 2) + "}";
@@ -123,19 +162,17 @@ void loop() {
       
       if (httpResponseCode > 0) {
         Serial.print("HTTP Response code: ");
-        Serial.println(httpResponseCode); // Sukses biasanya 201 (Created)
+        Serial.println(httpResponseCode);
         String payload = http.getString();
         Serial.println("Respons dari server: " + payload);
       } else {
         Serial.print("Error saat mengirim POST: ");
         Serial.println(httpResponseCode);
-        Serial.println(http.errorToString(httpResponseCode)); // Memunculkan alasan error jika gagal
+        Serial.println(http.errorToString(httpResponseCode));
       }
       http.end(); // Bebaskan resource
     } else {
       Serial.println("Koneksi WiFi terputus");
-      // Coba koneksi ulang jika diperlukan
-      // WiFi.begin(ssid, password);
     }
 
     // Reset hitungan pulsa dan aktifkan kembali interrupt
