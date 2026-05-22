@@ -71,25 +71,10 @@ def hitung_estimasi_lokasi(s1, s2, s3, status):
     if status == "Normal":
         return "-"
     s1, s2, s3 = float(s1), float(s2), float(s3)
-    
-    # Penurunan debit di Segmen 1 (antara S1 dan S2)
-    df_seg1 = s1 - s2  
-    
-    # Penurunan debit di Segmen 2 (antara S2 dan S3)
-    df_seg2 = s2 - s3  
-    
+    df_seg1 = s1 - s2
+    df_seg2 = s2 - s3
     SEGMEN_LEN = 84.0
-
-    # Logika Penentuan Segmen sesuai instruksi:
-    # Jika kebocoran terjadi di antara S1 dan S2 (df_seg1 lebih besar) -> Segmen 1
-    # Jika kebocoran terjadi di antara S2 dan S3 (df_seg2 lebih besar) -> Segmen 2
     if df_seg1 >= df_seg2:
-        segmen = 1
-    else:
-        segmen = 2
-
-    # Hitung estimasi jarak dalam segmen
-    if segmen == 1:
         rasio = df_seg1 / s1 if s1 > 0 else 0.5
         jarak_kotor = (1.0 - rasio) * SEGMEN_LEN
         jarak_final = min(SEGMEN_LEN - 5.0, max(5.0, jarak_kotor))
