@@ -74,7 +74,11 @@ def hitung_estimasi_lokasi(s1, s2, s3, status):
     df_seg1 = s1 - s2
     df_seg2 = s2 - s3
     SEGMEN_LEN = 84.0
-    if df_seg1 >= df_seg2:
+    
+    # Tambahkan toleransi 0.1 pada Segmen 1 karena Sensor 3 (di ujung) 
+    # biasanya memiliki penurunan alami (natural drop) yang membuat 
+    # seolah-olah df_seg2 selalu lebih besar.
+    if (df_seg1 + 0.1) >= df_seg2:
         rasio = df_seg1 / s1 if s1 > 0 else 0.5
         jarak_kotor = (1.0 - rasio) * SEGMEN_LEN
         jarak_final = min(SEGMEN_LEN - 5.0, max(5.0, jarak_kotor))
