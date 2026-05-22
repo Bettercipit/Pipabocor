@@ -76,34 +76,34 @@ def hitung_estimasi_lokasi(s1, s2, s3, status):
     df_total = s1 - s3
     SEGMEN_LEN = 84.0
 
-    # === TOLERANSI NOISE UNTUK ALIRAN RENDAH ===
-    # Pada aliran rendah (< 2 L/min), sensor YF-S201 kurang presisi.
-    # Noise bisa menyebabkan delta_seg2 > delta_seg1 padahal bocor di seg1.
-    NOISE_MARGIN = 0.15  # toleransi noise sensor (L/min)
+    # === LOGIKA PENENTUAN SEGMEN BOCOR ===
+    # Pada aliran rendah, sensor YF-S201 sering menghasilkan noise yang
+    # menyebabkan S2 > S1 (delta_seg1 negatif). Ini adalah anomali sensor.
+    # Segmen 2 HANYA dilaporkan jika buktinya sangat kuat dan jelas.
 
-    # Tentukan segmen bocor dengan logika yang lebih robust
-    if df_seg1 > df_seg2 + NOISE_MARGIN:
-        # Drop di segmen 1 JAUH lebih besar → pasti bocor di segmen 1
+    segmen = 1  # Default: Segmen 1
+
+    # KASUS 1: delta_seg1 negatif (S2 > S1) → PASTI anomali sensor
+    # Tidak mungkin air bertambah di tengah pipa. Default Segmen 1.
+    if df_seg1 < 0:
         segmen = 1
-    elif df_seg2 > df_seg1 + NOISE_MARGIN:
-        # Drop di segmen 2 JAUH lebih besar → pasti bocor di segmen 2
-        segmen = 2
-    else:
-        # Kedua delta mirip / dalam range noise → ambiguous
-        # Pada aliran rendah, sensor sering salah baca.
-        # Prioritas: jika ada penurunan positif dari S1→S2, bocor di segmen 1
-        if df_seg1 > 0:
-            segmen = 1
-        elif df_seg2 > 0 and df_seg1 <= 0:
-            # S2 > S1 (anomali sensor) tapi S2 > S3 → kemungkinan tetap bocor di seg1
-            # karena air yang bocor di seg1 mengurangi aliran ke S3
-            segmen = 1
+
+    # KASUS 2: Kedua delta positif → bisa menentukan segmen dengan benar
+    elif df_seg1 >= 0 and df_seg2 >= 0:
+        # Segmen 2 HANYA jika drop di seg2 JAUH lebih besar dari seg1
+        # DAN aliran cukup tinggi untuk pembacaan yang akurat
+        if df_seg2 > df_seg1 * 3 and df_seg2 > 0.2 and s1 > 1.0:
+            segmen = 2
         else:
-            segmen = 1  # Default segmen 1 jika semua ambiguous
+            segmen = 1
+
+    # KASUS 3: delta_seg2 negatif (S3 > S2) → bocor di segmen 1
+    else:
+        segmen = 1
 
     # Hitung estimasi jarak dalam segmen
     if segmen == 1:
-        rasio = df_seg1 / s1 if s1 > 0 else 0.5
+        rasio = df_seg1 / s1 if s1 > 0 and df_seg1 > 0 else 0.5
         jarak_kotor = (1.0 - rasio) * SEGMEN_LEN
         jarak_final = min(SEGMEN_LEN - 5.0, max(5.0, jarak_kotor))
         return f"Segmen 1 (± {jarak_final:.1f} cm dari S1)"
