@@ -71,39 +71,26 @@ def hitung_estimasi_lokasi(s1, s2, s3, status):
     if status == "Normal":
         return "-"
     s1, s2, s3 = float(s1), float(s2), float(s3)
-    df_seg1 = s1 - s2  # penurunan debit di segmen 1
-    df_seg2 = s2 - s3  # penurunan debit di segmen 2
-    df_total = s1 - s3
+    
+    # Penurunan debit di Segmen 1 (antara S1 dan S2)
+    df_seg1 = s1 - s2  
+    
+    # Penurunan debit di Segmen 2 (antara S2 dan S3)
+    df_seg2 = s2 - s3  
+    
     SEGMEN_LEN = 84.0
 
-    # === LOGIKA PENENTUAN SEGMEN BOCOR ===
-    # Pada aliran rendah, sensor YF-S201 sering menghasilkan noise yang
-    # menyebabkan S2 > S1 (delta_seg1 negatif). Ini adalah anomali sensor.
-    # Segmen 2 HANYA dilaporkan jika buktinya sangat kuat dan jelas.
-
-    segmen = 1  # Default: Segmen 1
-
-    # KASUS 1: delta_seg1 negatif (S2 > S1) → PASTI anomali sensor
-    # Tidak mungkin air bertambah di tengah pipa. Default Segmen 1.
-    if df_seg1 < 0:
+    # Logika Penentuan Segmen sesuai instruksi:
+    # Jika kebocoran terjadi di antara S1 dan S2 (df_seg1 lebih besar) -> Segmen 1
+    # Jika kebocoran terjadi di antara S2 dan S3 (df_seg2 lebih besar) -> Segmen 2
+    if df_seg1 >= df_seg2:
         segmen = 1
-
-    # KASUS 2: Kedua delta positif → bisa menentukan segmen dengan benar
-    elif df_seg1 >= 0 and df_seg2 >= 0:
-        # Segmen 2 HANYA jika drop di seg2 JAUH lebih besar dari seg1
-        # DAN aliran cukup tinggi untuk pembacaan yang akurat
-        if df_seg2 > df_seg1 * 3 and df_seg2 > 0.2 and s1 > 1.0:
-            segmen = 2
-        else:
-            segmen = 1
-
-    # KASUS 3: delta_seg2 negatif (S3 > S2) → bocor di segmen 1
     else:
-        segmen = 1
+        segmen = 2
 
     # Hitung estimasi jarak dalam segmen
     if segmen == 1:
-        rasio = df_seg1 / s1 if s1 > 0 and df_seg1 > 0 else 0.5
+        rasio = df_seg1 / s1 if s1 > 0 else 0.5
         jarak_kotor = (1.0 - rasio) * SEGMEN_LEN
         jarak_final = min(SEGMEN_LEN - 5.0, max(5.0, jarak_kotor))
         return f"Segmen 1 (± {jarak_final:.1f} cm dari S1)"
