@@ -18,27 +18,27 @@ def generate_synthetic_data(num_samples=5000):
         
         if leak_type == "Normal":
             # Selisih sangat kecil (noise alami)
-            drop1 = np.random.uniform(0.0, 0.15)
-            drop2 = np.random.uniform(0.0, 0.15)
-            while (drop1 + drop2) > 0.2:
-                drop1 = np.random.uniform(0.0, 0.15)
-                drop2 = np.random.uniform(0.0, 0.15)
+            drop1 = np.random.uniform(0.0, 0.1)
+            drop2 = np.random.uniform(0.0, 0.1)
+            while (drop1 + drop2) > 0.1:
+                drop1 = np.random.uniform(0.0, 0.1)
+                drop2 = np.random.uniform(0.0, 0.1)
         elif leak_type == "Bocor Kecil":
             # Selisih medium
-            drop1 = np.random.uniform(0.1, 0.4)
-            drop2 = np.random.uniform(0.1, 0.4)
-            # Pastikan total drop masuk kategori Bocor Kecil (0.2 - 0.5)
-            while (drop1 + drop2) <= 0.2 or (drop1 + drop2) > 0.5:
-                drop1 = np.random.uniform(0.1, 0.4)
-                drop2 = np.random.uniform(0.1, 0.4)
+            drop1 = np.random.uniform(0.05, 0.2)
+            drop2 = np.random.uniform(0.05, 0.2)
+            # Pastikan total drop masuk kategori Bocor Kecil (0.1 - 0.3)
+            while (drop1 + drop2) <= 0.1 or (drop1 + drop2) > 0.3:
+                drop1 = np.random.uniform(0.05, 0.2)
+                drop2 = np.random.uniform(0.05, 0.2)
         else: # Bocor Besar
             # Selisih besar
-            drop1 = np.random.uniform(0.2, 1.5)
-            drop2 = np.random.uniform(0.2, 1.5)
-            # Pastikan total drop > 0.5
-            while (drop1 + drop2) <= 0.5:
-                drop1 = np.random.uniform(0.2, 1.5)
-                drop2 = np.random.uniform(0.2, 1.5)
+            drop1 = np.random.uniform(0.15, 1.0)
+            drop2 = np.random.uniform(0.15, 1.0)
+            # Pastikan total drop > 0.3
+            while (drop1 + drop2) <= 0.3:
+                drop1 = np.random.uniform(0.15, 1.0)
+                drop2 = np.random.uniform(0.15, 1.0)
                 
         s2 = s1 - drop1
         s3 = s2 - drop2
@@ -55,10 +55,10 @@ def generate_synthetic_data(num_samples=5000):
         
         variance = np.var([f1, f2, f3])
         
-        # Labeling (mengikuti logika awal)
-        if df_total > 0.5:
+        # Labeling (mengikuti logika baru yang lebih sensitif)
+        if df_total > 0.3:
             label = "Bocor Besar"
-        elif df_total > 0.2:
+        elif df_total > 0.1:
             label = "Bocor Kecil"
         else:
             label = "Normal"
