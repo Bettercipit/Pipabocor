@@ -67,41 +67,25 @@ def predict_leak(rf_model, df_features):
     confidence = max(probabilities)
     return prediction, round(confidence, 2)
 
-def hitung_estimasi_lokasi(s1, s2, s3, status):
-    if status == "Normal":
-        return "-"
-    s1, s2, s3 = float(s1), float(s2), float(s3)
-    df_seg1 = s1 - s2
-    df_seg2 = s2 - s3
-    SEGMEN_LEN = 84.0
-    
-    # Tambahkan toleransi 0.1 pada Segmen 1 karena Sensor 3 (di ujung) 
-    # biasanya memiliki penurunan alami (natural drop) yang membuat 
-    # seolah-olah df_seg2 selalu lebih besar.
-    if (df_seg1 + 0.1) >= df_seg2:
-        rasio = df_seg1 / s1 if s1 > 0 else 0.5
-        jarak_kotor = (1.0 - rasio) * SEGMEN_LEN
-        jarak_final = min(SEGMEN_LEN - 5.0, max(5.0, jarak_kotor))
-        return f"Segmen 1 (± {jarak_final:.1f} cm dari S1)"
-    else:
-        rasio = df_seg2 / s2 if s2 > 0 else 0.5
-        jarak_dari_s2 = (1.0 - rasio) * SEGMEN_LEN
-        jarak_final_s2 = min(SEGMEN_LEN - 5.0, max(5.0, jarak_dari_s2))
-        total_jarak = SEGMEN_LEN + jarak_final_s2
-        return f"Segmen 2 (± {total_jarak:.1f} cm dari S1)"
+def predict_location(reg_model, df_features):
+    jarak_cm = reg_model.predict(df_features)[0]
+    return float(jarak_cm)
 
 def process_data():
-    print("[START] ML Service Aktif: Menyiapkan model...")
+    print("[START] ML Service Aktif: Menyiapkan model AI (Classifier & Regressor)...")
 
-    model_path = 'rf_model.pkl'
-    if not os.path.exists(model_path):
-        print(f"[ERROR] Model '{model_path}' tidak ditemukan!")
+    model_path_clf = 'rf_model.pkl'
+    model_path_reg = 'rf_regressor.pkl'
+    
+    if not os.path.exists(model_path_clf) or not os.path.exists(model_path_reg):
+        print(f"[ERROR] Model AI tidak ditemukan!")
         print("Silakan jalankan 'python train_rf.py' terlebih dahulu.")
         return
 
     try:
-        rf_model = joblib.load(model_path)
-        print("[OK] Random Forest Model berhasil dimuat.")
+        rf_model = joblib.load(model_path_clf)
+        reg_model = joblib.load(model_path_reg)
+        print("[OK] Kedua Model AI (Random Forest) berhasil dimuat.")
     except Exception as e:
         print(f"[ERROR] Error memuat model: {e}")
         return
@@ -127,12 +111,21 @@ def process_data():
                 s3 = row['sensor_3']
                 row_id = row['id']
 
-                # --- 1. EKSTRAK FITUR & PREDIKSI ---
+                # --- 1. EKSTRAK FITUR & PREDIKSI STATUS ---
                 df_features = extract_features(s1, s2, s3)
                 status, confidence = predict_leak(rf_model, df_features)
-                lokasi_estimasi = hitung_estimasi_lokasi(s1, s2, s3, status)
+                
+                # --- 2. PREDIKSI LOKASI (Menggunakan AI Regresi) ---
+                lokasi_estimasi = "-"
+                if status != "Normal":
+                    jarak_cm_ai = predict_location(reg_model, df_features)
+                    # Format teks berdasarkan hasil prediksi AI
+                    if jarak_cm_ai <= 84.0:
+                        lokasi_estimasi = f"Segmen 1 (± {jarak_cm_ai:.1f} cm dari S1)"
+                    else:
+                        lokasi_estimasi = f"Segmen 2 (± {jarak_cm_ai:.1f} cm dari S1)"
 
-                # --- 2. UPDATE DATA DENGAN HASIL PREDIKSI ---
+                # --- 3. UPDATE DATA DENGAN HASIL PREDIKSI ---
                 supabase_patch(
                     f'/rest/v1/sensor_readings?id=eq.{row_id}',
                     {
@@ -142,7 +135,7 @@ def process_data():
                     }
                 )
 
-                # --- 3. BUAT ALERT JIKA BOCOR ---
+                # --- 4. BUAT ALERT JIKA BOCOR ---
                 if status != 'Normal':
                     pesan_alert = f"Kebocoran ({status}) terdeteksi pada {lokasi_estimasi} dengan akurasi {confidence*100:.0f}%"
                     supabase_post('/rest/v1/alerts', {'message': pesan_alert})
