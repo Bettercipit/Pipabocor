@@ -5,8 +5,50 @@ from sklearn.model_selection import train_test_split
 from sklearn.metrics import classification_report, accuracy_score, mean_absolute_error
 import joblib
 
+import json
+import os
+
 def generate_synthetic_data(num_samples=50000):
     print(f"Men-generate {num_samples} data sintetis untuk AI Klasifikasi dan Regresi...")
+    
+    # --- BACA DATA KALIBRASI ---
+    kalibrasi_path = os.path.join(os.path.dirname(__file__), '..', 'kalibrasi.json')
+    if not os.path.exists(kalibrasi_path):
+        kalibrasi_path = 'kalibrasi.json'
+        
+    try:
+        with open(kalibrasi_path, 'r') as f:
+            kalibrasi = json.load(f)
+            
+        s1_n = kalibrasi['normal']['s1']
+        s2_n = kalibrasi['normal']['s2']
+        s3_n = kalibrasi['normal']['s3']
+        
+        # Scaling hardware
+        scale_s2 = s2_n / s1_n if s1_n > 0 else 0.93
+        scale_s3 = s3_n / s1_n if s1_n > 0 else 1.23
+        
+        s1_bk = kalibrasi['bocor_kecil']['s1']
+        s2_bk = kalibrasi['bocor_kecil']['s2']
+        s1_bb = kalibrasi['bocor_besar']['s1']
+        s2_bb = kalibrasi['bocor_besar']['s2']
+        
+        # Hitung rata-rata drop (kebocoran) saat Bocor Kecil dan Bocor Besar
+        drop_bk = s1_bk - (s2_bk / scale_s2)
+        drop_bb = s1_bb - (s2_bb / scale_s2)
+        
+        print(f"Kalibrasi berhasil dimuat: Scale S2={scale_s2:.2f}, Scale S3={scale_s3:.2f}")
+        print(f"Deteksi Drop: Kecil={drop_bk:.2f}, Besar={drop_bb:.2f}")
+    except Exception as e:
+        print(f"Gagal membaca kalibrasi.json, menggunakan nilai default: {e}")
+        scale_s2 = 0.93
+        scale_s3 = 1.23
+        drop_bk = 0.42
+        drop_bb = 0.64
+
+    # Tentukan Threshold secara dinamis
+    threshold_normal_kecil = drop_bk * 0.4
+    threshold_kecil_besar = (drop_bk + drop_bb) / 2
     
     data = []
     for _ in range(num_samples):
@@ -17,41 +59,40 @@ def generate_synthetic_data(num_samples=50000):
         leak_type = np.random.choice(["Normal", "Bocor Kecil", "Bocor Besar"], p=[0.5, 0.3, 0.2])
         
         if leak_type == "Normal":
-            drop1 = np.random.uniform(0.0, 0.05)
-            drop2 = np.random.uniform(0.0, 0.05)
-            while (drop1 + drop2) > 0.1:
-                drop1 = np.random.uniform(0.0, 0.05)
-                drop2 = np.random.uniform(0.0, 0.05)
+            drop1 = np.random.uniform(0.0, threshold_normal_kecil * 0.5)
+            drop2 = np.random.uniform(0.0, threshold_normal_kecil * 0.5)
+            while (drop1 + drop2) > threshold_normal_kecil:
+                drop1 = np.random.uniform(0.0, threshold_normal_kecil * 0.5)
+                drop2 = np.random.uniform(0.0, threshold_normal_kecil * 0.5)
         elif leak_type == "Bocor Kecil":
-            drop1 = np.random.uniform(0.05, 0.57)
-            drop2 = np.random.uniform(0.05, 0.57)
-            while (drop1 + drop2) <= 0.15 or (drop1 + drop2) > 0.57:
-                drop1 = np.random.uniform(0.05, 0.57)
-                drop2 = np.random.uniform(0.05, 0.57)
+            drop1 = np.random.uniform(threshold_normal_kecil * 0.5, threshold_kecil_besar)
+            drop2 = np.random.uniform(threshold_normal_kecil * 0.5, threshold_kecil_besar)
+            while (drop1 + drop2) <= threshold_normal_kecil or (drop1 + drop2) > threshold_kecil_besar:
+                drop1 = np.random.uniform(threshold_normal_kecil * 0.5, threshold_kecil_besar)
+                drop2 = np.random.uniform(threshold_normal_kecil * 0.5, threshold_kecil_besar)
         else: # Bocor Besar
-            drop1 = np.random.uniform(0.4, 1.5)
-            drop2 = np.random.uniform(0.4, 1.5)
-            while (drop1 + drop2) <= 0.57:
-                drop1 = np.random.uniform(0.4, 1.5)
-                drop2 = np.random.uniform(0.4, 1.5)
+            drop1 = np.random.uniform(threshold_kecil_besar * 0.5, drop_bb * 2.0)
+            drop2 = np.random.uniform(threshold_kecil_besar * 0.5, drop_bb * 2.0)
+            while (drop1 + drop2) <= threshold_kecil_besar:
+                drop1 = np.random.uniform(threshold_kecil_besar * 0.5, drop_bb * 2.0)
+                drop2 = np.random.uniform(threshold_kecil_besar * 0.5, drop_bb * 2.0)
                 
         # Simulasikan kebocoran lebih dominan di salah satu segmen secara acak
         # Agar AI bisa membedakan Segmen 1 atau Segmen 2
         segmen_bocor = np.random.choice([1, 2])
         if leak_type != "Normal":
             if segmen_bocor == 1:
-                drop2 = np.random.uniform(0.0, 0.05)
+                drop2 = np.random.uniform(0.0, threshold_normal_kecil * 0.3)
             else:
-                drop1 = np.random.uniform(0.0, 0.05)
+                drop1 = np.random.uniform(0.0, threshold_normal_kecil * 0.3)
 
         true_s2 = true_s1 - drop1
         true_s3 = true_s2 - drop2
         
-        # Terapkan scaling hardware asli berdasarkan data kalibrasi.json Anda
-        # S2 membaca sekitar 93% dari aliran asli, S3 membaca sekitar 123% dari aliran asli.
+        # Terapkan scaling hardware dinamis dari kalibrasi
         f1 = true_s1
-        f2 = true_s2 * 0.93
-        f3 = true_s3 * 1.23
+        f2 = true_s2 * scale_s2
+        f3 = true_s3 * scale_s3
         
         # 9 Fitur Utama
         df_seg1 = f1 - f2
@@ -64,9 +105,9 @@ def generate_synthetic_data(num_samples=50000):
         
         # Label Klasifikasi menggunakan Total True Drop
         true_total_drop = drop1 + drop2
-        if true_total_drop > 0.57:
+        if true_total_drop > threshold_kecil_besar:
             label_status = "Bocor Besar"
-        elif true_total_drop > 0.15:
+        elif true_total_drop > threshold_normal_kecil:
             label_status = "Bocor Kecil"
         else:
             label_status = "Normal"
@@ -77,12 +118,16 @@ def generate_synthetic_data(num_samples=50000):
         jarak_cm = 0.0
         
         if label_status != "Normal":
-            if (df_seg1 + 0.1) >= df_seg2:
-                rasio = df_seg1 / f1 if f1 > 0 else 0.5
+            # BUG FIX: Gunakan True Drop (drop1 dan drop2) untuk menentukan Ground Truth Segmen
+            # Jangan gunakan df_seg1 dan df_seg2 karena nilai tersebut sudah terdistorsi oleh kalibrasi S3 yang lebih tinggi (scale_s3)
+            if drop1 >= drop2:
+                # Kebocoran di Segmen 1
+                rasio = drop1 / true_s1 if true_s1 > 0 else 0.5
                 jarak_kotor = (1.0 - rasio) * SEGMEN_LEN
                 jarak_cm = min(SEGMEN_LEN - 5.0, max(5.0, jarak_kotor))
             else:
-                rasio = df_seg2 / f2 if f2 > 0 else 0.5
+                # Kebocoran di Segmen 2
+                rasio = drop2 / true_s2 if true_s2 > 0 else 0.5
                 jarak_kotor = (1.0 - rasio) * SEGMEN_LEN
                 jarak_cm = SEGMEN_LEN + min(SEGMEN_LEN - 5.0, max(5.0, jarak_kotor))
             
