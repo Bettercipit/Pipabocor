@@ -23,17 +23,17 @@ def generate_synthetic_data(num_samples=50000):
                 drop1 = np.random.uniform(0.0, 0.05)
                 drop2 = np.random.uniform(0.0, 0.05)
         elif leak_type == "Bocor Kecil":
-            drop1 = np.random.uniform(0.05, 0.46)
-            drop2 = np.random.uniform(0.05, 0.46)
-            while (drop1 + drop2) <= 0.15 or (drop1 + drop2) > 0.46:
-                drop1 = np.random.uniform(0.05, 0.46)
-                drop2 = np.random.uniform(0.05, 0.46)
+            drop1 = np.random.uniform(0.05, 0.57)
+            drop2 = np.random.uniform(0.05, 0.57)
+            while (drop1 + drop2) <= 0.15 or (drop1 + drop2) > 0.57:
+                drop1 = np.random.uniform(0.05, 0.57)
+                drop2 = np.random.uniform(0.05, 0.57)
         else: # Bocor Besar
-            drop1 = np.random.uniform(0.3, 1.5)
-            drop2 = np.random.uniform(0.3, 1.5)
-            while (drop1 + drop2) <= 0.46:
-                drop1 = np.random.uniform(0.3, 1.5)
-                drop2 = np.random.uniform(0.3, 1.5)
+            drop1 = np.random.uniform(0.4, 1.5)
+            drop2 = np.random.uniform(0.4, 1.5)
+            while (drop1 + drop2) <= 0.57:
+                drop1 = np.random.uniform(0.4, 1.5)
+                drop2 = np.random.uniform(0.4, 1.5)
                 
         # Simulasikan kebocoran lebih dominan di salah satu segmen secara acak
         # Agar AI bisa membedakan Segmen 1 atau Segmen 2
@@ -48,10 +48,10 @@ def generate_synthetic_data(num_samples=50000):
         true_s3 = true_s2 - drop2
         
         # Terapkan scaling hardware asli berdasarkan data kalibrasi.json Anda
-        # S2 membaca sekitar 95% dari aliran asli, S3 membaca sekitar 126% dari aliran asli.
+        # S2 membaca sekitar 93% dari aliran asli, S3 membaca sekitar 123% dari aliran asli.
         f1 = true_s1
-        f2 = true_s2 * 0.95
-        f3 = true_s3 * 1.26
+        f2 = true_s2 * 0.93
+        f3 = true_s3 * 1.23
         
         # 9 Fitur Utama
         df_seg1 = f1 - f2
@@ -64,7 +64,7 @@ def generate_synthetic_data(num_samples=50000):
         
         # Label Klasifikasi menggunakan Total True Drop
         true_total_drop = drop1 + drop2
-        if true_total_drop > 0.46:
+        if true_total_drop > 0.57:
             label_status = "Bocor Besar"
         elif true_total_drop > 0.15:
             label_status = "Bocor Kecil"
