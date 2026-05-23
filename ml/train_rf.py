@@ -23,15 +23,15 @@ def generate_synthetic_data(num_samples=50000):
                 drop1 = np.random.uniform(0.0, 0.05)
                 drop2 = np.random.uniform(0.0, 0.05)
         elif leak_type == "Bocor Kecil":
-            drop1 = np.random.uniform(0.05, 0.4)
-            drop2 = np.random.uniform(0.05, 0.4)
-            while (drop1 + drop2) <= 0.15 or (drop1 + drop2) > 0.5:
-                drop1 = np.random.uniform(0.05, 0.4)
-                drop2 = np.random.uniform(0.05, 0.4)
+            drop1 = np.random.uniform(0.05, 0.45)
+            drop2 = np.random.uniform(0.05, 0.45)
+            while (drop1 + drop2) <= 0.15 or (drop1 + drop2) > 0.45:
+                drop1 = np.random.uniform(0.05, 0.45)
+                drop2 = np.random.uniform(0.05, 0.45)
         else: # Bocor Besar
             drop1 = np.random.uniform(0.3, 1.5)
             drop2 = np.random.uniform(0.3, 1.5)
-            while (drop1 + drop2) <= 0.5:
+            while (drop1 + drop2) <= 0.45:
                 drop1 = np.random.uniform(0.3, 1.5)
                 drop2 = np.random.uniform(0.3, 1.5)
                 
@@ -48,10 +48,10 @@ def generate_synthetic_data(num_samples=50000):
         true_s3 = true_s2 - drop2
         
         # Terapkan scaling hardware asli berdasarkan data kalibrasi.json Anda
-        # S2 membaca sekitar 85% dari aliran asli, S3 membaca sekitar 110% dari aliran asli.
+        # S2 membaca sekitar 95% dari aliran asli, S3 membaca sekitar 122% dari aliran asli.
         f1 = true_s1
-        f2 = true_s2 * 0.85
-        f3 = true_s3 * 1.1
+        f2 = true_s2 * 0.95
+        f3 = true_s3 * 1.22
         
         # 9 Fitur Utama
         df_seg1 = f1 - f2
@@ -64,7 +64,7 @@ def generate_synthetic_data(num_samples=50000):
         
         # Label Klasifikasi menggunakan Total True Drop
         true_total_drop = drop1 + drop2
-        if true_total_drop > 0.5:
+        if true_total_drop > 0.45:
             label_status = "Bocor Besar"
         elif true_total_drop > 0.15:
             label_status = "Bocor Kecil"
