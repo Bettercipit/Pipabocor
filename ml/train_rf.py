@@ -28,27 +28,50 @@ def generate_synthetic_data(num_samples=50000):
         scale_s2 = s2_n / s1_n if s1_n > 0 else 0.93
         scale_s3 = s3_n / s1_n if s1_n > 0 else 1.23
         
-        s1_bk = kalibrasi['bocor_kecil']['s1']
-        s2_bk = kalibrasi['bocor_kecil']['s2']
-        s1_bb = kalibrasi['bocor_besar']['s1']
-        s2_bb = kalibrasi['bocor_besar']['s2']
+        # Nilai fallback jika memakai file kalibrasi lama
+        bocor_kecil_fallback = kalibrasi.get('bocor_kecil', kalibrasi['normal'])
+        bocor_besar_fallback = kalibrasi.get('bocor_besar', kalibrasi['normal'])
         
-        # Hitung rata-rata drop (kebocoran) saat Bocor Kecil dan Bocor Besar
-        drop_bk = s1_bk - (s2_bk / scale_s2)
-        drop_bb = s1_bb - (s2_bb / scale_s2)
+        s1_bk_1 = kalibrasi.get('bocor_kecil_1', bocor_kecil_fallback)['s1']
+        s2_bk_1 = kalibrasi.get('bocor_kecil_1', bocor_kecil_fallback)['s2']
+        s1_bb_1 = kalibrasi.get('bocor_besar_1', bocor_besar_fallback)['s1']
+        s2_bb_1 = kalibrasi.get('bocor_besar_1', bocor_besar_fallback)['s2']
+        
+        # Hitung rata-rata drop (kebocoran) di Segmen 1
+        drop1_bk = s1_bk_1 - (s2_bk_1 / scale_s2)
+        drop1_bb = s1_bb_1 - (s2_bb_1 / scale_s2)
+        
+        # Hitung rata-rata drop (kebocoran) di Segmen 2 (jika ada)
+        if 'bocor_kecil_2' in kalibrasi:
+            s2_bk_2 = kalibrasi['bocor_kecil_2']['s2']
+            s3_bk_2 = kalibrasi['bocor_kecil_2']['s3']
+            drop2_bk = (s2_bk_2 / scale_s2) - (s3_bk_2 / scale_s3)
+        else:
+            drop2_bk = drop1_bk
+            
+        if 'bocor_besar_2' in kalibrasi:
+            s2_bb_2 = kalibrasi['bocor_besar_2']['s2']
+            s3_bb_2 = kalibrasi['bocor_besar_2']['s3']
+            drop2_bb = (s2_bb_2 / scale_s2) - (s3_bb_2 / scale_s3)
+        else:
+            drop2_bb = drop1_bb
+            
+        drop_bk_avg = (drop1_bk + drop2_bk) / 2
+        drop_bb_avg = (drop1_bb + drop2_bb) / 2
         
         print(f"Kalibrasi berhasil dimuat: Scale S2={scale_s2:.2f}, Scale S3={scale_s3:.2f}")
-        print(f"Deteksi Drop: Kecil={drop_bk:.2f}, Besar={drop_bb:.2f}")
+        print(f"Drop Segmen 1: Kecil={drop1_bk:.2f}, Besar={drop1_bb:.2f}")
+        print(f"Drop Segmen 2: Kecil={drop2_bk:.2f}, Besar={drop2_bb:.2f}")
     except Exception as e:
         print(f"Gagal membaca kalibrasi.json, menggunakan nilai default: {e}")
         scale_s2 = 0.93
         scale_s3 = 1.23
-        drop_bk = 0.42
-        drop_bb = 0.64
+        drop_bk_avg = 0.42
+        drop_bb_avg = 0.64
 
-    # Tentukan Threshold secara dinamis
-    threshold_normal_kecil = drop_bk * 0.4
-    threshold_kecil_besar = (drop_bk + drop_bb) / 2
+    # Tentukan Threshold secara dinamis (menggunakan rata-rata dari kedua segmen)
+    threshold_normal_kecil = drop_bk_avg * 0.4
+    threshold_kecil_besar = (drop_bk_avg + drop_bb_avg) / 2
     
     data = []
     for _ in range(num_samples):

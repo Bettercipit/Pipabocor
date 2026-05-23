@@ -53,25 +53,47 @@ def main():
         print("Gagal mengambil data dari database.")
         return
 
-    # 2. BOCOR KECIL
-    input("\n[LANGKAH 2] Putar sedikit/sedang keran pertama Anda (Kondisi BOCOR KECIL). Tunggu aliran stabil, lalu tekan ENTER...")
-    print("Merekam data Bocor Kecil selama 15 detik...")
+    # 2. BOCOR KECIL SEGMEN 1
+    input("\n[LANGKAH 2] Putar sedikit/sedang keran PERTAMA Anda (BOCOR KECIL SEGMEN 1). Tunggu aliran stabil, lalu tekan ENTER...")
+    print("Merekam data Bocor Kecil Segmen 1 selama 15 detik...")
     time.sleep(15)
-    data_kecil = ambil_data_sensor()
-    if data_kecil:
-        hasil_kalibrasi["bocor_kecil"] = {"s1": data_kecil[0], "s2": data_kecil[1], "s3": data_kecil[2]}
-        print(f"✅ Terekam BOCOR KECIL -> S1: {data_kecil[0]:.2f}, S2: {data_kecil[1]:.2f}, S3: {data_kecil[2]:.2f}")
+    data_kecil_1 = ambil_data_sensor()
+    if data_kecil_1:
+        hasil_kalibrasi["bocor_kecil_1"] = {"s1": data_kecil_1[0], "s2": data_kecil_1[1], "s3": data_kecil_1[2]}
+        print(f"✅ Terekam BOCOR KECIL SEGMEN 1 -> S1: {data_kecil_1[0]:.2f}, S2: {data_kecil_1[1]:.2f}, S3: {data_kecil_1[2]:.2f}")
     else:
         return
 
-    # 3. BOCOR BESAR
-    input("\n[LANGKAH 3] Putar FULL keran pertama Anda (Kondisi BOCOR BESAR). Tunggu aliran stabil, lalu tekan ENTER...")
-    print("Merekam data Bocor Besar selama 15 detik...")
+    # 3. BOCOR BESAR SEGMEN 1
+    input("\n[LANGKAH 3] Putar FULL keran PERTAMA Anda (BOCOR BESAR SEGMEN 1). Tunggu aliran stabil, lalu tekan ENTER...")
+    print("Merekam data Bocor Besar Segmen 1 selama 15 detik...")
     time.sleep(15)
-    data_besar = ambil_data_sensor()
-    if data_besar:
-        hasil_kalibrasi["bocor_besar"] = {"s1": data_besar[0], "s2": data_besar[1], "s3": data_besar[2]}
-        print(f"✅ Terekam BOCOR BESAR -> S1: {data_besar[0]:.2f}, S2: {data_besar[1]:.2f}, S3: {data_besar[2]:.2f}")
+    data_besar_1 = ambil_data_sensor()
+    if data_besar_1:
+        hasil_kalibrasi["bocor_besar_1"] = {"s1": data_besar_1[0], "s2": data_besar_1[1], "s3": data_besar_1[2]}
+        print(f"✅ Terekam BOCOR BESAR SEGMEN 1 -> S1: {data_besar_1[0]:.2f}, S2: {data_besar_1[1]:.2f}, S3: {data_besar_1[2]:.2f}")
+    else:
+        return
+
+    # 4. BOCOR KECIL SEGMEN 2
+    input("\n[LANGKAH 4] Tutup keran pertama, lalu putar sedikit/sedang keran KEDUA Anda (BOCOR KECIL SEGMEN 2). Tunggu aliran stabil, lalu tekan ENTER...")
+    print("Merekam data Bocor Kecil Segmen 2 selama 15 detik...")
+    time.sleep(15)
+    data_kecil_2 = ambil_data_sensor()
+    if data_kecil_2:
+        hasil_kalibrasi["bocor_kecil_2"] = {"s1": data_kecil_2[0], "s2": data_kecil_2[1], "s3": data_kecil_2[2]}
+        print(f"✅ Terekam BOCOR KECIL SEGMEN 2 -> S1: {data_kecil_2[0]:.2f}, S2: {data_kecil_2[1]:.2f}, S3: {data_kecil_2[2]:.2f}")
+    else:
+        return
+
+    # 5. BOCOR BESAR SEGMEN 2
+    input("\n[LANGKAH 5] Putar FULL keran KEDUA Anda (BOCOR BESAR SEGMEN 2). Tunggu aliran stabil, lalu tekan ENTER...")
+    print("Merekam data Bocor Besar Segmen 2 selama 15 detik...")
+    time.sleep(15)
+    data_besar_2 = ambil_data_sensor()
+    if data_besar_2:
+        hasil_kalibrasi["bocor_besar_2"] = {"s1": data_besar_2[0], "s2": data_besar_2[1], "s3": data_besar_2[2]}
+        print(f"✅ Terekam BOCOR BESAR SEGMEN 2 -> S1: {data_besar_2[0]:.2f}, S2: {data_besar_2[1]:.2f}, S3: {data_besar_2[2]:.2f}")
     else:
         return
 
