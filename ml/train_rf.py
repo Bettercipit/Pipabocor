@@ -25,13 +25,13 @@ def generate_synthetic_data(num_samples=50000):
         elif leak_type == "Bocor Kecil":
             drop1 = np.random.uniform(0.05, 0.4)
             drop2 = np.random.uniform(0.05, 0.4)
-            while (drop1 + drop2) <= 0.1 or (drop1 + drop2) > 0.55:
+            while (drop1 + drop2) <= 0.15 or (drop1 + drop2) > 0.5:
                 drop1 = np.random.uniform(0.05, 0.4)
                 drop2 = np.random.uniform(0.05, 0.4)
         else: # Bocor Besar
             drop1 = np.random.uniform(0.3, 1.5)
             drop2 = np.random.uniform(0.3, 1.5)
-            while (drop1 + drop2) <= 0.55:
+            while (drop1 + drop2) <= 0.5:
                 drop1 = np.random.uniform(0.3, 1.5)
                 drop2 = np.random.uniform(0.3, 1.5)
                 
@@ -47,11 +47,11 @@ def generate_synthetic_data(num_samples=50000):
         true_s2 = true_s1 - drop1
         true_s3 = true_s2 - drop2
         
-        # Terapkan scaling hardware asli: S2 terbaca ~40%, S3 terbaca ~50%
-        # Ini penting agar AI tidak bingung saat melihat S3 > S2 di dunia nyata
+        # Terapkan scaling hardware asli berdasarkan data kalibrasi.json Anda
+        # S2 membaca sekitar 85% dari aliran asli, S3 membaca sekitar 110% dari aliran asli.
         f1 = true_s1
-        f2 = true_s2 * 0.4
-        f3 = true_s3 * 0.5
+        f2 = true_s2 * 0.85
+        f3 = true_s3 * 1.1
         
         # 9 Fitur Utama
         df_seg1 = f1 - f2
@@ -64,9 +64,9 @@ def generate_synthetic_data(num_samples=50000):
         
         # Label Klasifikasi menggunakan Total True Drop
         true_total_drop = drop1 + drop2
-        if true_total_drop > 0.55:
+        if true_total_drop > 0.5:
             label_status = "Bocor Besar"
-        elif true_total_drop > 0.1:
+        elif true_total_drop > 0.15:
             label_status = "Bocor Kecil"
         else:
             label_status = "Normal"
