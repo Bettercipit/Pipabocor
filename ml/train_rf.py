@@ -23,17 +23,17 @@ def generate_synthetic_data(num_samples=50000):
                 drop1 = np.random.uniform(0.0, 0.05)
                 drop2 = np.random.uniform(0.0, 0.05)
         elif leak_type == "Bocor Kecil":
-            drop1 = np.random.uniform(0.05, 0.25)
-            drop2 = np.random.uniform(0.05, 0.25)
-            while (drop1 + drop2) <= 0.1 or (drop1 + drop2) > 0.4:
-                drop1 = np.random.uniform(0.05, 0.25)
-                drop2 = np.random.uniform(0.05, 0.25)
+            drop1 = np.random.uniform(0.05, 0.4)
+            drop2 = np.random.uniform(0.05, 0.4)
+            while (drop1 + drop2) <= 0.1 or (drop1 + drop2) > 0.55:
+                drop1 = np.random.uniform(0.05, 0.4)
+                drop2 = np.random.uniform(0.05, 0.4)
         else: # Bocor Besar
-            drop1 = np.random.uniform(0.2, 1.0)
-            drop2 = np.random.uniform(0.2, 1.0)
-            while (drop1 + drop2) <= 0.4:
-                drop1 = np.random.uniform(0.2, 1.0)
-                drop2 = np.random.uniform(0.2, 1.0)
+            drop1 = np.random.uniform(0.3, 1.5)
+            drop2 = np.random.uniform(0.3, 1.5)
+            while (drop1 + drop2) <= 0.55:
+                drop1 = np.random.uniform(0.3, 1.5)
+                drop2 = np.random.uniform(0.3, 1.5)
                 
         # Simulasikan kebocoran lebih dominan di salah satu segmen secara acak
         # Agar AI bisa membedakan Segmen 1 atau Segmen 2
@@ -64,7 +64,7 @@ def generate_synthetic_data(num_samples=50000):
         
         # Label Klasifikasi menggunakan Total True Drop
         true_total_drop = drop1 + drop2
-        if true_total_drop > 0.4:
+        if true_total_drop > 0.55:
             label_status = "Bocor Besar"
         elif true_total_drop > 0.1:
             label_status = "Bocor Kecil"
