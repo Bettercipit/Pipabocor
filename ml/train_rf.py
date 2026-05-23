@@ -17,26 +17,26 @@ def generate_synthetic_data(num_samples=50000):
         leak_type = np.random.choice(["Normal", "Bocor Kecil", "Bocor Besar"], p=[0.5, 0.3, 0.2])
         
         if leak_type == "Normal":
-            # Penurunan alami pipa (gesekan, jarak, turbulensi) bisa sampai 0.5 L/min
-            drop1 = np.random.uniform(0.0, 0.3)
-            drop2 = np.random.uniform(0.0, 0.3)
-            while (drop1 + drop2) > 0.5:
-                drop1 = np.random.uniform(0.0, 0.3)
-                drop2 = np.random.uniform(0.0, 0.3)
+            # Penurunan alami pipa (gesekan, jarak, kalibrasi sensor yang tidak identik) bisa sangat tinggi
+            drop1 = np.random.uniform(0.0, 0.8)
+            drop2 = np.random.uniform(0.0, 0.8)
+            while (drop1 + drop2) > 1.5:
+                drop1 = np.random.uniform(0.0, 0.8)
+                drop2 = np.random.uniform(0.0, 0.8)
         elif leak_type == "Bocor Kecil":
-            # Bocor kecil: total drop antara 0.5 - 1.0 L/min
-            drop1 = np.random.uniform(0.2, 0.6)
-            drop2 = np.random.uniform(0.2, 0.6)
-            while (drop1 + drop2) <= 0.5 or (drop1 + drop2) > 1.0:
-                drop1 = np.random.uniform(0.2, 0.6)
-                drop2 = np.random.uniform(0.2, 0.6)
+            # Bocor kecil: total drop antara 1.5 - 3.0 L/min
+            drop1 = np.random.uniform(0.7, 2.0)
+            drop2 = np.random.uniform(0.7, 2.0)
+            while (drop1 + drop2) <= 1.5 or (drop1 + drop2) > 3.0:
+                drop1 = np.random.uniform(0.7, 2.0)
+                drop2 = np.random.uniform(0.7, 2.0)
         else: # Bocor Besar
-            # Bocor besar: total drop > 1.0 L/min
-            drop1 = np.random.uniform(0.5, 2.0)
-            drop2 = np.random.uniform(0.5, 2.0)
-            while (drop1 + drop2) <= 1.0:
-                drop1 = np.random.uniform(0.5, 2.0)
-                drop2 = np.random.uniform(0.5, 2.0)
+            # Bocor besar: total drop > 3.0 L/min
+            drop1 = np.random.uniform(1.5, 4.0)
+            drop2 = np.random.uniform(1.5, 4.0)
+            while (drop1 + drop2) <= 3.0:
+                drop1 = np.random.uniform(1.5, 4.0)
+                drop2 = np.random.uniform(1.5, 4.0)
                 
         # Simulasikan kebocoran lebih dominan di salah satu segmen secara acak
         # Agar AI bisa membedakan Segmen 1 atau Segmen 2
@@ -44,10 +44,10 @@ def generate_synthetic_data(num_samples=50000):
         if leak_type != "Normal":
             if segmen_bocor == 1:
                 # Fokuskan drop di segmen 1
-                drop2 = np.random.uniform(0.0, 0.15)
+                drop2 = np.random.uniform(0.0, 0.3)
             else:
                 # Fokuskan drop di segmen 2
-                drop1 = np.random.uniform(0.0, 0.15)
+                drop1 = np.random.uniform(0.0, 0.3)
 
         s2 = s1 - drop1
         s3 = s2 - drop2
@@ -62,10 +62,10 @@ def generate_synthetic_data(num_samples=50000):
         ratio2 = f3 / f2 if f2 > 0 else 0
         variance = np.var([f1, f2, f3])
         
-        # Label Klasifikasi (threshold tinggi agar tidak false positive)
-        if df_total > 1.0:
+        # Label Klasifikasi (threshold ekstra tinggi agar tahan terhadap perbedaan sensor)
+        if df_total > 3.0:
             label_status = "Bocor Besar"
-        elif df_total > 0.5:
+        elif df_total > 1.5:
             label_status = "Bocor Kecil"
         else:
             label_status = "Normal"
