@@ -94,11 +94,11 @@ def generate_synthetic_data(num_samples=50000):
                 drop1 = np.random.uniform(threshold_normal_kecil * 0.5, threshold_kecil_besar)
                 drop2 = np.random.uniform(threshold_normal_kecil * 0.5, threshold_kecil_besar)
         else: # Bocor Besar
-            drop1 = np.random.uniform(threshold_kecil_besar * 0.5, drop_bb * 2.0)
-            drop2 = np.random.uniform(threshold_kecil_besar * 0.5, drop_bb * 2.0)
+            drop1 = np.random.uniform(threshold_kecil_besar * 0.5, drop_bb_avg * 2.0)
+            drop2 = np.random.uniform(threshold_kecil_besar * 0.5, drop_bb_avg * 2.0)
             while (drop1 + drop2) <= threshold_kecil_besar:
-                drop1 = np.random.uniform(threshold_kecil_besar * 0.5, drop_bb * 2.0)
-                drop2 = np.random.uniform(threshold_kecil_besar * 0.5, drop_bb * 2.0)
+                drop1 = np.random.uniform(threshold_kecil_besar * 0.5, drop_bb_avg * 2.0)
+                drop2 = np.random.uniform(threshold_kecil_besar * 0.5, drop_bb_avg * 2.0)
                 
         # Simulasikan kebocoran lebih dominan di salah satu segmen secara acak
         # Agar AI bisa membedakan Segmen 1 atau Segmen 2
